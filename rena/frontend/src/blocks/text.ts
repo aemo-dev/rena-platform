@@ -1,7 +1,6 @@
 /**
  * Text blocks - string manipulation operations
  */
-import * as Blockly from 'blockly';
 
 // Text Category
 export const textCategory = {

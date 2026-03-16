@@ -1,7 +1,6 @@
 /**
  * Math blocks - mathematical operations
  */
-import * as Blockly from 'blockly';
 
 // Math Category
 export const mathCategory = {

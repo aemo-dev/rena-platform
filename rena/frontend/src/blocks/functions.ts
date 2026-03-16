@@ -1,7 +1,6 @@
 /**
  * Functions blocks - function definition and calls
  */
-import * as Blockly from 'blockly';
 
 // Functions Category (dynamic)
 export const functionsCategory = {

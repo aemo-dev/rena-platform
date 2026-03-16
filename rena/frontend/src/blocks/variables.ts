@@ -1,7 +1,6 @@
 /**
  * Variables blocks - variable declaration and access
  */
-import * as Blockly from 'blockly';
 
 // Variables Category (dynamic)
 export const variablesCategory = {

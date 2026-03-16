@@ -1,7 +1,6 @@
 /**
  * Loops blocks - repeat and iteration operations
  */
-import * as Blockly from 'blockly';
 
 // Loops Category
 export const loopsCategory = {
