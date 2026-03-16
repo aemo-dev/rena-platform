@@ -1,0 +1,9 @@
+name = "rena-platform"
+compatibility_date = "2024-01-01"
+
+[site]
+bucket = "./rena/frontend/dist"
+
+[pages]
+build_command = "npm run build"
+compatibility_flags = ["nodejs_compat"]
