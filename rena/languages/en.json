@@ -1,0 +1,107 @@
+{
+  "nav": {
+    "login": "Sign In",
+    "start": "Get Started"
+  },
+  "hero": {
+    "titlePrefix": "Much more than a",
+    "titleAccent": "modern app creator",
+    "titleSuffix": "without coding",
+    "feature1": "Drag & Drop",
+    "feature2": "No Coding",
+    "feature3": "Publish Anywhere",
+    "cta": "Start Building Free",
+    "scroll": "Scroll to explore"
+  },
+  "sections": {
+    "designer": {
+      "badge": "Visual Designer Interface",
+      "title": "Design your app's user interface with our intuitive drag-and-drop designer.",
+      "desc": "Simply drag components from the palette and arrange them on your screen. Real-time visual preview and Material Design components built-in.",
+      "feat1": "Drag-and-drop component placement",
+      "feat2": "Real-time visual preview",
+      "feat3": "Material Design components"
+    },
+    "blocks": {
+      "badge": "Visual Blocks Programming",
+      "title": "Program your app's logic using visual blocks instead of traditional code.",
+      "desc": "Connect blocks together to create powerful functionality without learning complex programming syntax. Beginner-friendly and error-proof.",
+      "feat1": "Visual programming blocks",
+      "feat2": "No syntax errors possible",
+      "feat3": "Beginner-friendly approach"
+    },
+    "management": {
+      "badge": "Project Management",
+      "title": "Manage all your projects from a centralized dashboard.",
+      "desc": "Create new projects, organize existing ones, and access all your apps in one convenient location with cloud-based storage.",
+      "cloud": "Cloud Storage",
+      "access": "Instant Access"
+    },
+    "export": {
+      "badge": "Build & Export Your App",
+      "title": "Generate your finished Android app with a single click.",
+      "desc": "Download the APK file directly or share it instantly using QR codes for easy distribution and testing.",
+      "oneclick": "One-click Export",
+      "qr": "QR Code Sharing"
+    }
+  },
+  "features": {
+    "title": "Why Choose Rena?",
+    "sub": "Everything you need to build amazing apps without coding.",
+    "f1": { "title": "No Coding!", "desc": "Create apps without writing a single line of code." },
+    "f2": { "title": "Cloud Based", "desc": "Safe storage on powerful cloud infrastructure." },
+    "f3": { "title": "Simple Blocks", "desc": "Drag & drop blocks to build your app logic easily." },
+    "f4": { "title": "Live Testing", "desc": "Test changes instantly on your device." },
+    "f5": { "title": "Material Design", "desc": "Beautiful, modern interfaces built-in." },
+    "f6": { "title": "Secure", "desc": "Enterprise-grade security for your data." }
+  },
+  "cta": {
+    "title": "Ready to bring your ideas to life?",
+    "sub": "Join thousands of creators building amazing apps with Rena Platform.",
+    "btn": "Get Started for Free"
+  },
+  "footer": {
+    "desc": "The visual development platform of the future. Create, Build, and Launch apps without writing code.",
+    "col1": "Product",
+    "col1_item1": "Creator",
+    "col1_item2": "Blocks",
+    "col1_item3": "Showcase",
+    "col2": "Company",
+    "col2_item1": "About",
+    "col2_item2": "Community",
+    "col2_item3": "Blog",
+    "col3": "Support",
+    "col3_item1": "Documentation",
+    "col3_item2": "Tutorials",
+    "col3_item3": "FAQ",
+    "copy": "Rena Platform. Built with passion for creators."
+  },
+  "login": {
+    "title": "Welcome Back",
+    "sub": "Log in to continue building your amazing projects.",
+    "google": "Continue with Google",
+    "github": "Continue with GitHub",
+    "remember": "Remember me",
+    "back": "Back to home",
+    "terms": "Terms of Service",
+    "agree": "By signing in, you agree to our"
+  },
+  "dashboard": {
+    "title": "My Projects",
+    "create": "Create App",
+    "empty": "No projects yet. Create your first one!",
+    "loading": "Loading projects...",
+    "logout": "Logout",
+    "search": "Search projects...",
+    "open": "Open Project",
+    "createDialog": {
+      "title": "Create New App",
+      "appName": "App Name",
+      "packageName": "Package Name",
+      "platform": "Target Platform",
+      "themeColor": "Theme Color",
+      "cancel": "Cancel",
+      "submit": "Create Project"
+    }
+  }
+}

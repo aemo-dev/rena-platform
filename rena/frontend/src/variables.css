@@ -1,0 +1,31 @@
+:root {
+  /* Kodular Official Palette (Approx) */
+  --primary: #2e60ff;
+  --primary-dark: #1e4de6;
+  --primary-light: #ecf1ff;
+  --secondary: #ff4081; /* Material Pink */
+  --accent-blue: #00bcd4;
+  --accent-green: #4caf50;
+  --accent-yellow: #ffc107;
+  --accent-indigo: #3f51b5;
+  --success: #10b981;  /* Emerald green for export */
+  --info: #6366f1;    /* Indigo for import */
+
+  /* Theme: Clean Modern (Inspired by Kodular.io) */
+  --bg: #f5f6f8;
+  --bg-alt: #eceef2;
+  --surface: #ffffff;
+  --surface-alt: #f0f2f5;
+  --text: #1a1e2e; /* Deep Slate */
+  --text-muted: #64748b; /* Slate Grey */
+  --border: #e2e8f0;
+  --navbar-bg: rgba(245, 246, 248, 0.9);
+  --shadow: rgba(0, 0, 0, 0.05);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  --hover-shadow: 0 15px 40px rgba(46, 96, 255, 0.1);
+  
+  /* Gradients */
+  --grad-hero: linear-gradient(135deg, var(--primary), #5c8bff);
+  --grad-brand: linear-gradient(135deg, var(--primary), var(--accent-blue));
+  --grad-surface: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 100%);
+}

@@ -1,0 +1,41 @@
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Go
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# SQL Scripts
+rena/sql-scripts/
+
+# IDE
+.vscode/*
+rena/frontend/.vscode/
+.qoder/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+rena/lib/android-sdk/
+rena/lib/keystores/
