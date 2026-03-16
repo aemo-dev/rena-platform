@@ -4,6 +4,9 @@ compatibility_date = "2026-02-15"
 [site]
 bucket = "./rena/frontend/dist"
 
+[vars]
+API_URL = ""
+
 [pages]
 build_command = "npm run build"
 compatibility_flags = ["nodejs_compat"]
