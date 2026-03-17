@@ -3,18 +3,14 @@
 REM ============================================
 REM Supabase SQL Scripts Runner
 REM ============================================
-REM Setup Instructions:
-REM Option A - Using psql (recommended):
-REM 1. Install PostgreSQL client (psql)
-REM 2. Set DATABASE_URL in .env
-REM
-REM Option B - Using Supabase CLI:
-REM 1. Download Supabase CLI from GitHub:
-REM    https://github.com/supabase/cli/releases
-REM 2. Extract it and add the executable to PATH
-REM 3. Login: supabase login
-REM 4. Link: supabase link --project-ref YOUR_PROJECT_ID
+REM Prerequisites:
+REM - PostgreSQL client (psql) installed and in PATH
+REM - DATABASE_URL in .env file
 REM --------------------------------------------
+
+echo Loading environment variables...
+for /f "usebackq tokens=*" %%a in ("..\.env") do set "%%a"
+echo Done loading environment variables.
 
 echo Running SQL scripts...
 
@@ -31,16 +27,8 @@ if defined DATABASE_URL (
         )
     )
 ) else (
-    echo WARNING: DATABASE_URL not set in environment
-    echo Using Supabase CLI...
-    for %%f in (*.sql) do (
-        echo Running %%f...
-        type %%f | supabase db query
-        if errorlevel 1 (
-            echo Error running %%f
-            exit /b 1
-        )
-    )
+    echo ERROR: DATABASE_URL not set in .env file
+    exit /b 1
 )
 
 echo All SQL scripts executed successfully!
