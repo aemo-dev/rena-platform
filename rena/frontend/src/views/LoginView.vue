@@ -62,9 +62,22 @@ const strengthColor = computed(() => {
 onMounted(() => {
   document.title = 'Rena Auth'
 
-  // Check for error in query params
+  // Check for error in query params and clear URL
   if (route.query.error) {
-    errorMessage.value = String(route.query.error)
+    const errorCode = route.query.error as string
+    const errorDesc = route.query.error_description as string
+    
+    let message = errorDesc ? errorDesc.replace(/\+/g, ' ') : 'Authentication failed. Please try again.'
+    
+    if (errorCode === 'bad_oauth_state') {
+      message = 'Your session expired. Please try logging in again.'
+    } else if (errorCode === 'invalid_request') {
+      message = 'Invalid request. Please try logging in again.'
+    }
+    
+    errorMessage.value = message
+    // Clear the error from URL
+    window.history.replaceState({}, '', window.location.pathname)
   }
   
   // Generate random shapes
