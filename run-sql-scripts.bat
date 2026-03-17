@@ -12,9 +12,8 @@ echo Copying SQL scripts to supabase/migrations...
 
 if not exist supabase/migrations mkdir supabase/migrations
 
-REM Get current timestamp
-for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"
-set timestamp=%dt:~0,8%000000
+REM Get current timestamp using PowerShell
+for /f %%i in ('powershell -command "Get-Date -Format yyyyMMddHHmmss"') do set "timestamp=%%i"
 
 REM Copy and rename files with timestamp
 copy /Y rena\sql-scripts\keystores.sql supabase\migrations\%timestamp%_keystores.sql
