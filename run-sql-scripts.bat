@@ -1,25 +1,70 @@
 @echo off
+setlocal enabledelayedexpansion
 
 REM ============================================
-REM Supabase SQL Scripts Runner
+REM Supabase SQL Scripts Runner (Migrations Mode)
 REM ============================================
-REM Prerequisites:
-REM - Supabase CLI installed
-REM - Run from project root directory
-REM --------------------------------------------
 
-echo Copying SQL scripts to supabase/migrations...
+set "SOURCE_DIR=rena\sql-scripts"
+set "MIGRATIONS_DIR=supabase\migrations"
 
-if not exist supabase/migrations mkdir supabase/migrations
+REM Set to 1 to clear old migrations (WARNING: destructive)
+set "CLEAR_MIGRATIONS=1"
 
-REM Get current timestamp using PowerShell
+REM Validate source directory
+if not exist "%SOURCE_DIR%" (
+    echo ERROR: Source directory "%SOURCE_DIR%" not found.
+    exit /b 1
+)
+
+REM Clear migrations if requested
+if "%CLEAR_MIGRATIONS%"=="1" (
+    echo Clearing existing migrations...
+    if exist "%MIGRATIONS_DIR%" (
+        rmdir /s /q "%MIGRATIONS_DIR%"
+    )
+)
+
+REM Ensure migrations directory exists
+if not exist "%MIGRATIONS_DIR%" (
+    mkdir "%MIGRATIONS_DIR%"
+)
+
+echo Preparing SQL scripts...
+
+REM Get timestamp
 for /f %%i in ('powershell -command "Get-Date -Format yyyyMMddHHmmss"') do set "timestamp=%%i"
+set count=0
 
-REM Copy and rename files with timestamp
-copy /Y rena\sql-scripts\keystores.sql supabase\migrations\%timestamp%_keystores.sql
-copy /Y rena\sql-scripts\projects.sql supabase\migrations\%timestamp%_projects.sql
+REM Loop through SQL files
+for %%f in ("%SOURCE_DIR%\*.sql") do (
+    set /a count+=1
+    set "filename=%%~nf"
+    set "newname=!timestamp!!count!_!filename!.sql"
 
-echo Pushing migrations to Supabase...
+    echo [COPY] %%~nxf -> !MIGRATIONS_DIR!\!newname!
+    copy /Y "%%f" "!MIGRATIONS_DIR!\!newname!" >nul
+
+    if errorlevel 1 (
+        echo ERROR: Failed to copy %%~nxf
+        exit /b 1
+    )
+)
+
+if %count%==0 (
+    echo WARNING: No SQL files found in "%SOURCE_DIR%"
+    exit /b 0
+)
+
+echo Applying migrations to Supabase...
 supabase db push
 
-echo Done!
+if errorlevel 1 (
+    echo ERROR: Migration failed!
+    exit /b 1
+)
+
+echo SUCCESS: All SQL scripts applied successfully.
+echo Total files processed: %count%
+
+endlocal

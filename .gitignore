@@ -20,10 +20,6 @@ bin/
 # SQL Scripts
 rena/sql-scripts/
 
-# Supabase
-supabase/
-!supabase/migrations/
-
 # IDE
 .vscode/*
 rena/frontend/.vscode/
