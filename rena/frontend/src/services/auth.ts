@@ -197,10 +197,11 @@ export async function signUpWithEmail(
  */
 export async function signInWithOAuth(provider: Provider, redirectTo?: string): Promise<{ url?: string }> {
   try {
+    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: redirectTo ?? `${window.location.origin}/auth/callback`,
+        redirectTo: redirectTo ?? `${siteUrl}/auth/callback`,
       },
     })
 
