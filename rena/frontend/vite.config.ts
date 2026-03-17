@@ -4,6 +4,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/rena-platform/',
   plugins: [vue()],
   envDir: '../../', // Look for .env in the root
   resolve: {
