@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { supabase } from '../supabase'
 import type { User, Provider } from '@supabase/supabase-js'
 
+const siteUrl = import.meta.env.VITE_SITE_URL || ''
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null as User | null,
@@ -17,7 +19,7 @@ export const useAuthStore = defineStore('auth', {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-            redirectTo: window.location.origin + '/auth/callback'
+            redirectTo: (siteUrl || window.location.origin) + '/auth/callback'
         }
       })
       if (error) throw error
@@ -36,7 +38,7 @@ export const useAuthStore = defineStore('auth', {
         password: pass,
         options: {
           data: metadata,
-          emailRedirectTo: window.location.origin + '/auth/callback'
+          emailRedirectTo: (siteUrl || window.location.origin) + '/auth/callback'
         }
       })
       if (error) throw error
@@ -44,7 +46,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async resetPassword(email: string) {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/auth/callback?reset=true'
+        redirectTo: (siteUrl || window.location.origin) + '/auth/callback?reset=true'
       })
       if (error) throw error
     },

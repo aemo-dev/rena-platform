@@ -8,6 +8,8 @@ import { supabase } from '../supabase'
 import type { User, Provider } from '@supabase/supabase-js'
 import apiFetch, { type ApiResponse } from './api'
 
+const siteUrl = import.meta.env.VITE_SITE_URL || ''
+
 /**
  * Login request payload
  */
@@ -163,7 +165,7 @@ export async function signUpWithEmail(
       password,
       options: {
         data: metadata,
-        emailRedirectTo: emailRedirectTo ?? `${window.location.origin}/auth/callback`,
+        emailRedirectTo: emailRedirectTo ?? `${siteUrl || window.location.origin}/auth/callback`,
       },
     })
 
@@ -197,11 +199,10 @@ export async function signUpWithEmail(
  */
 export async function signInWithOAuth(provider: Provider, redirectTo?: string): Promise<{ url?: string }> {
   try {
-    const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: redirectTo ?? `${siteUrl}/auth/callback`,
+        redirectTo: redirectTo ?? `${siteUrl || window.location.origin}/auth/callback`,
       },
     })
 
@@ -236,7 +237,7 @@ export async function sendPasswordResetEmail(
 ): Promise<void> {
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectTo ?? `${window.location.origin}/auth/callback?reset=true`,
+      redirectTo: redirectTo ?? `${siteUrl || window.location.origin}/auth/callback?reset=true`,
     })
 
     if (error) {
