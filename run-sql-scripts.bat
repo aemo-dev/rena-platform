@@ -9,7 +9,7 @@ REM - DATABASE_URL in .env file
 REM --------------------------------------------
 
 echo Loading environment variables...
-for /f "usebackq tokens=*" %%a in ("..\.env") do set "%%a"
+for /f "usebackq tokens=*" %%a in (".env") do set "%%a"
 echo Done loading environment variables.
 
 echo Running SQL scripts...
