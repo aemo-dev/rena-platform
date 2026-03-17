@@ -4,31 +4,17 @@ REM ============================================
 REM Supabase SQL Scripts Runner
 REM ============================================
 REM Prerequisites:
-REM - PostgreSQL client (psql) installed and in PATH
-REM - DATABASE_URL in .env file
+REM - Supabase CLI installed
+REM - Run from project root directory
 REM --------------------------------------------
 
-echo Loading environment variables...
-for /f "usebackq tokens=*" %%a in (".env") do set "%%a"
-echo Done loading environment variables.
+echo Copying SQL scripts to supabase/migrations...
 
-echo Running SQL scripts...
+if not exist supabase/migrations mkdir supabase/migrations
 
-cd rena\sql-scripts
+copy /Y rena\sql-scripts\*.sql supabase\migrations\
 
-if defined DATABASE_URL (
-    echo Using DATABASE_URL from environment...
-    for %%f in (*.sql) do (
-        echo Running %%f...
-        psql "%DATABASE_URL%" -f %%f
-        if errorlevel 1 (
-            echo Error running %%f
-            exit /b 1
-        )
-    )
-) else (
-    echo ERROR: DATABASE_URL not set in .env file
-    exit /b 1
-)
+echo Pushing migrations to Supabase...
+supabase db push
 
-echo All SQL scripts executed successfully!
+echo Done!
