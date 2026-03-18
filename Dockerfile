@@ -3,11 +3,11 @@ FROM golang:1.26-alpine AS builder
 WORKDIR /app
 
 COPY rena/backend/go.mod rena/backend/go.sum ./
-RUN go mod download
+RUN GOTOOLCHAIN=auto go mod download
 
 COPY rena/backend/*.go ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o server
+RUN GOTOOLCHAIN=auto CGO_ENABLED=0 GOOS=linux go build -o server
 
 FROM alpine:3.19
 
