@@ -15,9 +15,10 @@ const ensureKeystore = async (user: any) => {
   if (!user || !user.email || isEnsuringKeystore || lastEnsuredUserId === user.id) return
 
   isEnsuringKeystore = true
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'
   try {
     console.log('[Keystore] Ensuring keystore exists for user...')
-    const response = await fetch('http://localhost:8080/api/keystore/generate', {
+    const response = await fetch(`${backendUrl}/api/keystore/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
