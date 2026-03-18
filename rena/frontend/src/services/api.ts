@@ -2,7 +2,7 @@
  * API Client for communicating with the Go backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'
+const API_BASE_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').replace(/\/$/, '')
 
 export interface ApiResponse<T> {
   data?: T
