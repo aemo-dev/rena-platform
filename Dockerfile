@@ -1,3 +1,4 @@
+# Force fresh build
 FROM golang:1.26-alpine AS builder
 
 WORKDIR /build
