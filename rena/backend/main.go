@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"rena-platform/backend/services"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	storage_go "github.com/supabase-community/storage-go"
@@ -85,7 +87,14 @@ func main() {
 	dbService := services.NewDatabaseService(client)
 	initStorageBucket(storageClient, "keystores")
 	r := gin.Default()
-	r.Use(corsMiddleware)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://aemo-dev.github.io", "http://localhost:8080", "https://rena-backend-production-e6a7.up.railway.app"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-User-ID"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge: 24 * time.Hour,
+	}))
 	r.SetTrustedProxies(nil)
 	appCtx := &AppContext{Client: client, StorageClient: storageClient, DBService: dbService}
 	SetupRoutes(r, appCtx)
@@ -99,33 +108,3 @@ func main() {
 	}
 }
 
-func corsMiddleware(c *gin.Context) {
-	allowedOrigins := []string{
-		"https://aemo-dev.github.io",
-		"http://localhost:8080",
-		"https://rena-backend-production-e6a7.up.railway.app",
-	}
-
-	origin := c.Request.Header.Get("Origin")
-	if origin != "" {
-		for _, allowed := range allowedOrigins {
-			if origin == allowed {
-				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-				break
-			}
-		}
-	}
-
-	if c.Writer.Header().Get("Access-Control-Allow-Origin") == "" {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	}
-
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-	if c.Request.Method == "OPTIONS" {
-		c.AbortWithStatus(204)
-		return
-	}
-	c.Next()
-}
