@@ -93,7 +93,7 @@ func main() {
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-User-ID"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge: 24 * time.Hour,
+		MaxAge:           24 * time.Hour,
 	}))
 	r.SetTrustedProxies(nil)
 	appCtx := &AppContext{Client: client, StorageClient: storageClient, DBService: dbService}
@@ -107,4 +107,3 @@ func main() {
 		log.Fatal("Failed to run server:", err)
 	}
 }
-
