@@ -19,6 +19,7 @@ bin/
 
 # SQL Scripts
 rena/sql-scripts/
+rena/backend/rena.db
 
 # IDE
 .vscode/*
