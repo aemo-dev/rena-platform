@@ -8,7 +8,7 @@ require (
 	github.com/supabase-community/supabase-go v0.0.4
 )
 
-require github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0 // indirect
+require github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect

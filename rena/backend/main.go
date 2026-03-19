@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -16,31 +17,41 @@ import (
 const defaultPort = "8080"
 
 func loadEnv() {
+	// In production (Railway), env vars come from platform secrets, not .env.
+	if os.Getenv("RAILWAY_ENVIRONMENT") != "" || os.Getenv("GO_ENV") == "production" {
+		log.Println("[Debug] Running in production; skipping .env file load")
+		return
+	}
+
 	paths := []string{".env", "../.env", "../../.env", "../../../.env"}
-	loaded := false
 	for _, p := range paths {
 		err := godotenv.Load(p)
 		if err == nil {
 			log.Printf("[Debug] Loaded env from: %s\n", p)
-			loaded = true
-			break
+			return
 		}
 	}
-	if !loaded {
-		log.Println("Warning: Error loading .env file from expected root paths")
-	}
+	log.Println("[Debug] .env not found; continuing with runtime environment variables")
 }
 
 func createSupabaseClients() (*supabase.Client, *storage_go.Client, error) {
-	supabaseURL := os.Getenv("VITE_SUPABASE_URL")
-	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+	supabaseURL := strings.TrimSpace(os.Getenv("VITE_SUPABASE_URL"))
+	supabaseKey := strings.TrimSpace(os.Getenv("SUPABASE_SERVICE_ROLE_KEY"))
 	if supabaseKey == "" {
-		supabaseKey = os.Getenv("VITE_SUPABASE_ANON_KEY")
-		log.Println("[Debug] WARNING: SUPABASE_SERVICE_ROLE_KEY not found, falling back to VITE_SUPABASE_ANON_KEY")
+		supabaseKey = strings.TrimSpace(os.Getenv("VITE_SUPABASE_ANON_KEY"))
+		log.Println("[Debug] SUPABASE_SERVICE_ROLE_KEY missing: falling back to VITE_SUPABASE_ANON_KEY")
 	}
+
 	if supabaseURL == "" || supabaseKey == "" {
-		log.Println("VITE_SUPABASE_URL or SUPABASE key not set in .env")
+		log.Println("ERROR: Missing required Supabase settings. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_ANON_KEY.")
+		log.Printf("Current env: VITE_SUPABASE_URL=%q, SUPABASE_SERVICE_ROLE_KEY set=%v, VITE_SUPABASE_ANON_KEY set=%v\n",
+			supabaseURL,
+			supabaseKey != "",
+			os.Getenv("VITE_SUPABASE_ANON_KEY") != "",
+		)
+		return nil, nil, fmt.Errorf("missing supabase config environment variables")
 	}
+
 	client, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
 	if err != nil {
 		return nil, nil, err
