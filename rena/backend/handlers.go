@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,6 +39,18 @@ func getRequiredHeader(c *gin.Context, key string) (string, bool) {
 	return value, true
 }
 
+func getUserIDFromHeader(c *gin.Context) (string, bool) {
+	userID, ok := getRequiredHeader(c, "X-User-ID")
+	if !ok {
+		return "", false
+	}
+	if userID == "" {
+		respondError(c, http.StatusUnauthorized, "X-User-ID is required")
+		return "", false
+	}
+	return userID, true
+}
+
 func (ctx *AppContext) HealthHandler(c *gin.Context) {
 	log.Println("[Debug] Health check endpoint called")
 	respondJSON(c, http.StatusOK, gin.H{"status": "ok", "message": "Rena Builder Backend is running"})
@@ -47,51 +58,32 @@ func (ctx *AppContext) HealthHandler(c *gin.Context) {
 
 func (ctx *AppContext) ExportProjectHandler(c *gin.Context) {
 	projectID := c.Param("id")
-	userID := c.Query("user_id")
-	if userID == "" {
-		respondError(c, http.StatusBadRequest, "user_id is required")
+	userID, ok := getUserIDFromHeader(c)
+	if !ok {
 		return
 	}
 
-	resp, count, err := ctx.Client.From("projects").Select("*", "", false).Eq("id", projectID).Eq("user_id", userID).Execute()
+	project, err := ctx.DBService.GetProjectByIDAndUserID(projectID, userID)
 	if err != nil {
 		log.Printf("[Export] Failed to fetch project: %v\n", err)
 		respondError(c, http.StatusNotFound, "Project not found")
 		return
 	}
 
-	var projects []map[string]interface{}
-	err = json.Unmarshal(resp, &projects)
-	if err != nil || len(projects) == 0 {
-		log.Printf("[Export] Project not found or invalid response: %v, count: %d\n", err, count)
-		respondError(c, http.StatusNotFound, "Project not found")
-		return
-	}
-
-	project := projects[0]
-	workspaceXML := ""
-	if ws, ok := project["workspace_xml"].(string); ok {
-		workspaceXML = ws
-	}
-	generatedCode := ""
-	if code, ok := project["generated_code"].(string); ok {
-		generatedCode = code
-	}
-
 	exportData := services.ProjectExport{
 		Metadata: services.ProjectMetadata{
-			ID:          projectID,
-			Name:        getString(project, "name"),
-			PackageName: getString(project, "package_name"),
-			Platform:    getString(project, "platform", "android"),
-			Color:       getString(project, "color", "#2e60ff"),
-			VersionCode: getInt(project, "version_code", 1),
-			VersionName: getString(project, "version_name", "1.0.0"),
-			CreatedAt:   getString(project, "created_at"),
-			UpdatedAt:   getString(project, "updated_at"),
+			ID:          project.ID,
+			Name:        project.Name,
+			PackageName: project.PackageName,
+			Platform:    project.Platform,
+			Color:       project.Color,
+			VersionCode: project.VersionCode,
+			VersionName: project.VersionName,
+			CreatedAt:   project.CreatedAt,
+			UpdatedAt:   project.UpdatedAt,
 		},
-		WorkspaceXML: workspaceXML,
-		Code:         generatedCode,
+		WorkspaceXML: project.WorkspaceXML,
+		Code:         project.GeneratedCode,
 	}
 
 	rnpData, err := services.ExportProjectToBytes(exportData)
@@ -101,7 +93,7 @@ func (ctx *AppContext) ExportProjectHandler(c *gin.Context) {
 		return
 	}
 
-	filename := fmt.Sprintf("%s.rnp", sanitizeFilename(getString(project, "name", "project")))
+	filename := fmt.Sprintf("%s.rnp", sanitizeFilename(project.Name))
 	c.Header("Content-Type", "application/zip")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	c.Header("Content-Length", fmt.Sprintf("%d", len(rnpData)))
@@ -196,7 +188,12 @@ func (ctx *AppContext) GetProjectsHandler(c *gin.Context) {
 
 func (ctx *AppContext) GetProjectHandler(c *gin.Context) {
 	projectID := c.Param("id")
-	project, err := ctx.DBService.GetProjectByID(projectID)
+	userID, ok := getUserIDFromHeader(c)
+	if !ok {
+		return
+	}
+
+	project, err := ctx.DBService.GetProjectByIDAndUserID(projectID, userID)
 	if err != nil {
 		log.Printf("[Projects] Failed to fetch project: %v\n", err)
 		respondError(c, http.StatusNotFound, "Project not found")
@@ -206,8 +203,12 @@ func (ctx *AppContext) GetProjectHandler(c *gin.Context) {
 }
 
 func (ctx *AppContext) CreateProjectHandler(c *gin.Context) {
+	userID, ok := getUserIDFromHeader(c)
+	if !ok {
+		return
+	}
+
 	var req struct {
-		UserID        string `json:"user_id"`
 		Name          string `json:"name"`
 		PackageName   string `json:"package_name"`
 		Platform      string `json:"platform"`
@@ -224,13 +225,13 @@ func (ctx *AppContext) CreateProjectHandler(c *gin.Context) {
 		return
 	}
 
-	if req.UserID == "" || req.Name == "" || req.PackageName == "" {
+	if userID == "" || req.Name == "" || req.PackageName == "" {
 		respondError(c, http.StatusBadRequest, "Missing required fields")
 		return
 	}
 
 	project := map[string]interface{}{
-		"user_id":        req.UserID,
+		"user_id":        userID,
 		"name":           req.Name,
 		"package_name":   req.PackageName,
 		"platform":       req.Platform,
@@ -306,7 +307,12 @@ func (ctx *AppContext) UpdateProjectHandler(c *gin.Context) {
 	}
 	updates["updated_at"] = "NOW()"
 
-	updatedProject, err := ctx.DBService.UpdateProject(projectID, updates)
+	userID, ok := getUserIDFromHeader(c)
+	if !ok {
+		return
+	}
+
+	updatedProject, err := ctx.DBService.UpdateProject(projectID, userID, updates)
 	if err != nil {
 		log.Printf("[Projects] Failed to update project: %v\n", err)
 		respondError(c, http.StatusInternalServerError, "Failed to update project")
@@ -318,7 +324,11 @@ func (ctx *AppContext) UpdateProjectHandler(c *gin.Context) {
 
 func (ctx *AppContext) DeleteProjectHandler(c *gin.Context) {
 	projectID := c.Param("id")
-	if err := ctx.DBService.DeleteProject(projectID); err != nil {
+	userID, ok := getUserIDFromHeader(c)
+	if !ok {
+		return
+	}
+	if err := ctx.DBService.DeleteProject(projectID, userID); err != nil {
 		log.Printf("[Projects] Failed to delete project: %v\n", err)
 		respondError(c, http.StatusInternalServerError, "Failed to delete project")
 		return

@@ -5,7 +5,7 @@ import { supabase } from '../supabase'
 import * as projectsApi from '../services/projects'
 import { 
   ChevronLeft, Play, Save, Settings, 
-  Undo2, Redo2, Moon, Sun
+  Undo2, Redo2, Moon, Sun, Download, Upload
 } from 'lucide-vue-next'
 import * as Blockly from 'blockly'
 import DarkTheme from '@blockly/theme-dark'
@@ -26,6 +26,11 @@ const isDarkMode = ref(false)
 const audioContext = ref<AudioContext | null>(null)
 const isExporting = ref(false)
 const isImporting = ref(false)
+const isSaving = ref(false)
+const saveStatus = ref('')
+const saveError = ref('')
+const hasUnsavedChanges = ref(false)
+let autoSaveTimer: number | null = null
 
 // Sidebar state (removed - no longer needed)
 
@@ -43,6 +48,20 @@ const fetchProject = async () => {
     project.value = data
   }
   loading.value = false
+}
+
+const loadWorkspaceFromProject = () => {
+  if (!workspace.value || !project.value || !project.value.workspace_xml) return
+
+  try {
+    const xml = (Blockly.Xml as any).textToDom(project.value.workspace_xml)
+    Blockly.Xml.domToWorkspace(xml, workspace.value)
+    hasUnsavedChanges.value = false
+    saveStatus.value = 'Workspace loaded'
+  } catch (err) {
+    console.warn('Could not load saved workspace XML:', err)
+    saveStatus.value = 'Workspace ready'
+  }
 }
 
 const initBlockly = () => {
@@ -74,6 +93,9 @@ const initBlockly = () => {
   setupAudioFeedback()
   setupBlockValidation()
 
+  loadWorkspaceFromProject()
+  setupAutoSave()
+
   // Handle resize
   window.addEventListener('resize', () => {
     if (workspace.value) Blockly.svgResize(workspace.value as Blockly.WorkspaceSvg)
@@ -89,37 +111,72 @@ onUnmounted(() => {
   if (workspace.value) {
     workspace.value.dispose()
   }
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer)
+  }
   // Clean up audio context
   if (audioContext.value && audioContext.value.state !== 'closed') {
     audioContext.value.close()
   }
 })
 
-const saveProject = () => {
-  console.log('Saving project...')
-  
+const scheduleAutoSave = () => {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer)
+  }
+  autoSaveTimer = window.setTimeout(async () => {
+    if (hasUnsavedChanges.value) {
+      await saveProject(true)
+    }
+  }, 1500)
+}
+
+const setupAutoSave = () => {
+  if (!workspace.value) return
+  workspace.value.addChangeListener(() => {
+    hasUnsavedChanges.value = true
+    saveStatus.value = 'Unsaved changes'
+    scheduleAutoSave()
+  })
+}
+
+const saveProject = async (isAutoSave = false) => {
   if (!workspace.value || !project.value) return
-  
-  // Save workspace XML and generated code to backend
-  const xml = Blockly.Xml.workspaceToDom(workspace.value)
-  const xmlText = Blockly.Xml.domToText(xml)
-  const code = ReactNativeGenerator.workspaceToCode(workspace.value)
-  
-  // Use the projects API to save
-  projectsApi.saveWorkspace(projectId, xmlText, code)
-    .then(response => {
-      if (response.error) {
-        console.error('Failed to save project:', response.error)
-        alert('Failed to save project: ' + response.error)
-      } else {
-        console.log('Project saved successfully')
+
+  if (!isAutoSave) {
+    saveStatus.value = 'Saving...'
+  }
+
+  isSaving.value = true
+  saveError.value = ''
+
+  try {
+    const xml = Blockly.Xml.workspaceToDom(workspace.value)
+    const xmlText = Blockly.Xml.domToText(xml)
+    const code = ReactNativeGenerator.workspaceToCode(workspace.value)
+    const response = await projectsApi.saveWorkspace(projectId, xmlText, code)
+
+    if (response.error) {
+      saveError.value = response.error
+      saveStatus.value = 'Save failed'
+      console.error('Failed to save project:', response.error)
+    } else {
+      hasUnsavedChanges.value = false
+      saveStatus.value = isAutoSave ? 'Auto-saved' : 'Saved successfully'
+      if (!isAutoSave) {
         alert('Project saved successfully!')
       }
-    })
-    .catch(err => {
-      console.error('Error saving project:', err)
-      alert('Error saving project')
-    })
+    }
+  } catch (err) {
+    saveError.value = err instanceof Error ? err.message : 'Unknown save error'
+    saveStatus.value = 'Save failed'
+    console.error('Error saving project:', err)
+    if (!isAutoSave) {
+      alert('Error saving project: ' + saveError.value)
+    }
+  } finally {
+    isSaving.value = false
+  }
 }
 
 const runProject = () => {
@@ -166,11 +223,15 @@ const exportProject = async () => {
     // Now download from backend
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'
     const userId = useAuthStore().user?.id
-    
-    const response = await fetch(`${backendUrl}/api/projects/${projectId}/export?user_id=${userId}`, {
+    if (!userId) {
+      throw new Error('User not authenticated')
+    }
+
+    const response = await fetch(`${backendUrl}/api/projects/${projectId}/export`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/zip',
+        'X-User-ID': userId,
       },
     })
     
@@ -413,12 +474,12 @@ const checkBlockForWarnings = (block: Blockly.Block): boolean => {
 
       <div class="header-right">
         <div class="workspace-actions">
-          <button class="tool-btn" title="Undo"><Undo2 :size="18" /></button>
-          <button class="tool-btn" title="Redo"><Redo2 :size="18" /></button>
+          <button class="tool-btn" title="Undo" @click="workspace?.undo(false)"><Undo2 :size="18" /></button>
+          <button class="tool-btn" title="Redo" @click="workspace?.undo(true)"><Redo2 :size="18" /></button>
           <div class="divider"></div>
-          <button class="action-btn save" @click="saveProject">
+          <button class="action-btn save" @click="saveProject(false)" :disabled="isSaving">
             <Save :size="18" />
-            <span>Save</span>
+            <span>{{ isSaving ? 'Saving...' : 'Save' }}</span>
           </button>
           <button class="action-btn run" @click="runProject">
             <Play :size="18" />
@@ -449,6 +510,10 @@ const checkBlockForWarnings = (block: Blockly.Block): boolean => {
             <Sun v-else :size="18" />
           </button>
           <button class="tool-btn settings"><Settings :size="20" /></button>
+        </div>
+        <div class="save-status-row">
+          <span class="save-status">{{ saveStatus }}</span>
+          <span class="save-error" v-if="saveError">{{ saveError }}</span>
         </div>
       </div>
     </header>
@@ -574,6 +639,20 @@ const checkBlockForWarnings = (block: Blockly.Block): boolean => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.save-status-row {
+  margin-left: 16px;
+  color: var(--text-muted);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.save-status {
+  color: var(--text-muted);
+}
+.save-error {
+  color: #ff6b6b;
 }
 
 .tool-btn {

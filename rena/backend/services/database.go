@@ -110,6 +110,34 @@ func (s *DatabaseService) GetProjectByID(projectID string) (*Project, error) {
 	return &projects[0], nil
 }
 
+// GetProjectByIDAndUserID retrieves a specific project by ID and user_id
+func (s *DatabaseService) GetProjectByIDAndUserID(projectID, userID string) (*Project, error) {
+	if projectID == "" || userID == "" {
+		return nil, fmt.Errorf("project ID and user ID are required")
+	}
+
+	resp, count, err := s.client.From("projects").Select("*", "", false).Eq("id", projectID).Eq("user_id", userID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch project: %w", err)
+	}
+
+	if count == 0 {
+		return nil, fmt.Errorf("project not found")
+	}
+
+	var projects []Project
+	err = parseJSONResponse(resp, &projects)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project response: %w", err)
+	}
+
+	if len(projects) == 0 {
+		return nil, fmt.Errorf("project not found")
+	}
+
+	return &projects[0], nil
+}
+
 // CreateProject creates a new project in the database
 func (s *DatabaseService) CreateProject(project map[string]interface{}) (*Project, error) {
 	resp, _, err := s.client.From("projects").Insert(project, false, "", "", "").Execute()
@@ -130,11 +158,19 @@ func (s *DatabaseService) CreateProject(project map[string]interface{}) (*Projec
 	return &createdProjects[0], nil
 }
 
-// UpdateProject updates an existing project
-func (s *DatabaseService) UpdateProject(projectID string, updates map[string]interface{}) (*Project, error) {
-	resp, _, err := s.client.From("projects").Update(updates, "id", "").Eq("id", projectID).Execute()
+// UpdateProject updates an existing project by ID and optional user ownership condition
+func (s *DatabaseService) UpdateProject(projectID, userID string, updates map[string]interface{}) (*Project, error) {
+	query := s.client.From("projects").Update(updates, "id", "").Eq("id", projectID)
+	if userID != "" {
+		query = query.Eq("user_id", userID)
+	}
+	resp, count, err := query.Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to update project: %w", err)
+	}
+
+	if count == 0 {
+		return nil, fmt.Errorf("project not found or no access")
 	}
 
 	var updatedProjects []Project
@@ -150,13 +186,19 @@ func (s *DatabaseService) UpdateProject(projectID string, updates map[string]int
 	return &updatedProjects[0], nil
 }
 
-// DeleteProject deletes a project by ID
-func (s *DatabaseService) DeleteProject(projectID string) error {
-	_, _, err := s.client.From("projects").Delete("", "").Eq("id", projectID).Execute()
+// DeleteProject deletes a project by ID and optional user ownership condition
+func (s *DatabaseService) DeleteProject(projectID, userID string) error {
+	query := s.client.From("projects").Delete("", "").Eq("id", projectID)
+	if userID != "" {
+		query = query.Eq("user_id", userID)
+	}
+	_, count, err := query.Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete project: %w", err)
 	}
-
+	if count == 0 {
+		return fmt.Errorf("project not found or no access")
+	}
 	return nil
 }
 
