@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, shallowRef, markRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { supabase } from '../supabase'
 import * as projectsApi from '../services/projects'
 import { 
   ChevronLeft, Play, Save, Settings, 
@@ -35,17 +34,12 @@ let autoSaveTimer: number | null = null
 // Sidebar state (removed - no longer needed)
 
 const fetchProject = async () => {
-  const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', projectId)
-    .single()
-  
-  if (error) {
-    console.error('Error fetching project:', error.message)
+  const result = await projectsApi.getProject(projectId)
+  if (result.error || !result.data?.project) {
+    console.error('Error fetching project:', result.error)
     router.push('/dashboard')
   } else {
-    project.value = data
+    project.value = result.data.project
   }
   loading.value = false
 }
@@ -206,17 +200,9 @@ const exportProject = async () => {
     const code = ReactNativeGenerator.workspaceToCode(workspace.value)
     
     // Save to database first
-    const { error: updateError } = await supabase
-      .from('projects')
-      .update({
-        workspace_xml: xmlText,
-        generated_code: code,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', projectId)
-    
-    if (updateError) {
-      console.error('Error saving workspace before export:', updateError.message)
+    const saveResult = await projectsApi.saveWorkspace(projectId, xmlText, code)
+    if (saveResult.error) {
+      console.error('Error saving workspace before export:', saveResult.error)
       throw new Error('Failed to save workspace')
     }
     
@@ -278,12 +264,14 @@ const importProject = async () => {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('user_id', useAuthStore().user?.id || '')
-      
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080'
-      
+      const token = localStorage.getItem('auth_token')
+      const headers: Record<string, string> = {}
+      if (token) headers.Authorization = `Bearer ${token}`
+
       const response = await fetch(`${backendUrl}/api/projects/import`, {
         method: 'POST',
+        headers,
         body: formData,
       })
       

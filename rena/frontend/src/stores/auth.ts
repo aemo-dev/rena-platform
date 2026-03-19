@@ -1,58 +1,92 @@
 import { defineStore } from 'pinia'
-import { supabase } from '../supabase'
-import type { User, Provider } from '@supabase/supabase-js'
+import { setAuthTokens, clearAuthTokens } from '../services/api'
 
-const siteUrl = import.meta.env.VITE_SITE_URL || ''
+type UserMeta = {
+  full_name?: string
+  name?: string
+}
+
+type AuthUser = {
+  id: string
+  email: string
+  user_metadata?: UserMeta
+}
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: null as User | null,
-    loading: true
+    user: null as AuthUser | null,
+    loading: false
   }),
   actions: {
     async fetchUser() {
-      const { data: { user } } = await supabase.auth.getUser()
-      this.user = user
-      this.loading = false
-    },
-    async loginWithProvider(provider: Provider) {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider,
-        options: {
-            redirectTo: (siteUrl || window.location.origin) + '/auth/callback'
-        }
-      })
-      if (error) throw error
-    },
-    async signInWithEmail(email: string, pass: string) {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const userId = localStorage.getItem('user_id')
+      const email = localStorage.getItem('user_email')
+      if (!userId || !email) {
+        this.user = null
+        return
+      }
+      const metadata = localStorage.getItem('user_metadata')
+      this.user = {
+        id: userId,
         email,
-        password: pass
-      })
-      if (error) throw error
-      this.user = data.user
+        user_metadata: metadata ? JSON.parse(metadata) : undefined,
+      }
     },
-    async signUpWithEmail(email: string, pass: string, metadata?: any) {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: pass,
-        options: {
-          data: metadata,
-          emailRedirectTo: (siteUrl || window.location.origin) + '/auth/callback'
-        }
+    async signInWithEmail(email: string, password: string) {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').replace(/\/$/, '')}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       })
-      if (error) throw error
-      this.user = data.user
+      const data = await res.json()
+      if (!res.ok || !data.token) {
+        throw new Error(data.error || 'Login failed')
+      }
+      setAuthTokens(String(data.user_id), data.token)
+      localStorage.setItem('user_email', email)
+      this.user = { id: String(data.user_id), email }
+    },
+    async signUpWithEmail(email: string, password: string, metadata?: any) {
+      const res = await fetch(`${(import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080').replace(/\/$/, '')}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.token) {
+        throw new Error(data.error || 'Registration failed')
+      }
+      setAuthTokens(String(data.user_id), data.token)
+      localStorage.setItem('user_email', email)
+      if (metadata) {
+        localStorage.setItem('user_metadata', JSON.stringify(metadata))
+      }
+      this.user = { id: String(data.user_id), email, user_metadata: metadata }
+    },
+    async loginWithProvider(_: string) {
+      throw new Error('OAuth login is not supported in local auth')
     },
     async resetPassword(email: string) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: (siteUrl || window.location.origin) + '/auth/callback?reset=true'
-      })
-      if (error) throw error
+      console.warn('resetPassword not implemented for local auth')
+      if (!email) throw new Error('Email required')
     },
-    async logout() {
-      await supabase.auth.signOut()
+    logout() {
+      clearAuthTokens()
+      localStorage.removeItem('user_email')
+      localStorage.removeItem('user_metadata')
       this.user = null
+    },
+    loadFromStorage() {
+      const userId = localStorage.getItem('user_id')
+      const email = localStorage.getItem('user_email')
+      const metadataStr = localStorage.getItem('user_metadata')
+      if (userId && email) {
+        this.user = {
+          id: userId,
+          email,
+          user_metadata: metadataStr ? JSON.parse(metadataStr) : undefined,
+        }
+      }
     }
   }
 })
