@@ -103,14 +103,21 @@ func corsMiddleware(c *gin.Context) {
 	allowedOrigins := []string{
 		"https://aemo-dev.github.io",
 		"http://localhost:8080",
+		"https://rena-backend-production-e6a7.up.railway.app",
 	}
 
 	origin := c.Request.Header.Get("Origin")
-	for _, allowed := range allowedOrigins {
-		if origin == allowed {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-			break
+	if origin != "" {
+		for _, allowed := range allowedOrigins {
+			if origin == allowed {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
 		}
+	}
+
+	if c.Writer.Header().Get("Access-Control-Allow-Origin") == "" {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	}
 
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
