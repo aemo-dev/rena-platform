@@ -16,7 +16,7 @@ netstat -aon | findstr :8081 | findstr LISTENING >nul 2>&1 && (for /f "tokens=5"
 :: Start Backend (in background of the same window)
 echo [Rena] Starting Backend (Go) on :8080...
 if exist "%ROOT_DIR%rena\backend\go.mod" (
-    start /b cmd /c "cd /d %ROOT_DIR%rena\backend && go run main.go"
+    start /b cmd /c "cd /d %ROOT_DIR%rena\backend && go run ."
 ) else (
     echo [Rena] Backend not initialized yet. Skipping...
 )

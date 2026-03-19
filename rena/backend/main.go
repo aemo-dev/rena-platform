@@ -16,9 +16,18 @@ import (
 const defaultPort = "8080"
 
 func loadEnv() {
-	err := godotenv.Load("../../.env")
-	if err != nil {
-		log.Println("Warning: Error loading .env file from root")
+	paths := []string{".env", "../.env", "../../.env", "../../../.env"}
+	loaded := false
+	for _, p := range paths {
+		err := godotenv.Load(p)
+		if err == nil {
+			log.Printf("[Debug] Loaded env from: %s\n", p)
+			loaded = true
+			break
+		}
+	}
+	if !loaded {
+		log.Println("Warning: Error loading .env file from expected root paths")
 	}
 }
 
