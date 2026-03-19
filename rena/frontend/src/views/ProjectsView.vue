@@ -191,7 +191,8 @@ const confirmLogout = () => {
 
 const handleLogout = async () => {
   await auth.logout()
-  router.push('/login')
+  await auth.fetchUser()
+  router.push('/dashboard')
 }
 
 const closeLogoutDialog = () => {

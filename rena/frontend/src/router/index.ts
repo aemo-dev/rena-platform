@@ -44,7 +44,7 @@ router.beforeEach(async (to) => {
   await auth.fetchUser()
 
   if (to.meta.requiresAuth && !auth.user) {
-    return { name: 'login' }
+    return { name: 'home' }
   } else if (to.name === 'login' && auth.user) {
     return { name: 'projects' }
   }

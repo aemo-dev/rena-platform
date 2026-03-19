@@ -7,6 +7,7 @@ func SetupRoutes(r *gin.Engine, ctx *AppContext) {
 
 	r.POST("/api/auth/register", ctx.Register)
 	r.POST("/api/auth/login", ctx.Login)
+	r.POST("/api/auth/device-login", ctx.DeviceLogin)
 
 	authGroup := r.Group("/api")
 	authGroup.Use(ctx.AuthMiddleware())

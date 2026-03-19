@@ -114,7 +114,9 @@ const startNow = () => {
   if (auth.user) {
     router.push('/dashboard')
   } else {
-    router.push('/login')
+    auth.fetchUser().then(() => {
+      router.push('/dashboard')
+    })
   }
 }
 </script>
@@ -144,7 +146,7 @@ const startNow = () => {
           </div>
           
           <template v-if="!auth.user">
-            <button @click="router.push('/login')" class="login-btn">{{ t('nav.login') }}</button>
+            <button @click="startNow" class="login-btn">{{ t('nav.login') }}</button>
             <button @click="startNow" class="cta-nav-btn">{{ t('nav.start') }}</button>
           </template>
           <template v-else>

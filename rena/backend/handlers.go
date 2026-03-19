@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -36,6 +37,13 @@ type LoginRequest struct {
 type authResponse struct {
 	UserID int64  `json:"user_id"`
 	Token  string `json:"token"`
+}
+
+type deviceAuthResponse struct {
+	UserID     int64  `json:"user_id"`
+	Token      string `json:"token"`
+	Email      string `json:"email"`
+	DeviceName string `json:"device_name"`
 }
 
 func (app *AppContext) Register(c *gin.Context) {
@@ -103,6 +111,72 @@ func (app *AppContext) Login(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, authResponse{UserID: user.ID, Token: token})
+}
+
+func sanitizeDeviceName(name string) string {
+	name = strings.TrimSpace(strings.ToLower(name))
+	if name == "" {
+		return "device"
+	}
+
+	var b strings.Builder
+	lastWasDash := false
+	for _, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+			lastWasDash = false
+		case r == '-' || r == '_' || r == '.' || r == ' ':
+			if !lastWasDash {
+				b.WriteByte('-')
+				lastWasDash = true
+			}
+		}
+	}
+
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return "device"
+	}
+	return out
+}
+
+func (app *AppContext) DeviceLogin(c *gin.Context) {
+	hostname, err := os.Hostname()
+	if err != nil || strings.TrimSpace(hostname) == "" {
+		hostname = "device"
+	}
+
+	deviceName := strings.TrimSpace(hostname)
+	safeName := sanitizeDeviceName(deviceName)
+	email := fmt.Sprintf("%s@device.local", safeName)
+
+	user, err := app.DB.GetUserByEmail(email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+		return
+	}
+
+	if user == nil {
+		user, err = app.DB.CreateUser(email, "device-local-user")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create device user"})
+			return
+		}
+	}
+
+	token, err := createJWTToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, deviceAuthResponse{
+		UserID:     user.ID,
+		Token:      token,
+		Email:      email,
+		DeviceName: deviceName,
+	})
 }
 
 func (app *AppContext) AuthMiddleware() gin.HandlerFunc {

@@ -36,9 +36,11 @@ const ensureKeystore = async (user: any) => {
 onMounted(() => {
   setLanguage('en')
   auth.loadFromStorage()
-  if (auth.user) {
-    ensureKeystore(auth.user)
-  }
+  auth.fetchUser().then(() => {
+    if (auth.user) {
+      ensureKeystore(auth.user)
+    }
+  })
 })
 
 watch(
@@ -51,7 +53,7 @@ watch(
       }
     } else {
       if (router.currentRoute.value.meta.requiresAuth) {
-        router.push('/login')
+        router.push('/')
       }
     }
   }
